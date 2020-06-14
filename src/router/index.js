@@ -3,10 +3,11 @@ import VueRouter from 'vue-router'
 
 Vue.use(VueRouter)
 
-const home = () => import("@/views/home/Home.vue")
-const category = () => import("@/views/category/Category.vue")
-const profile = () => import("@/views/profile/Profile.vue")
-const shopcart = () => import("@/views/shopcart/Shopcart.vue")
+const home = () => import("views/home/Home.vue")
+const category = () => import("views/category/Category.vue")
+const profile = () => import("views/profile/Profile.vue")
+const shopcart = () => import("views/shopcart/Shopcart.vue")
+const detail =() => import("views/detail/Detail.vue")
 
 const routes = [
   {
@@ -28,6 +29,10 @@ const routes = [
   {
     path:'/profile',
     component: profile
+  },
+  {
+    path:'/detail/:iid',
+    component: detail
   }
  ]
 

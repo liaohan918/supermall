@@ -1,16 +1,23 @@
 <template>
   <div id="home">
     <nav-bar class="home-nav"><div slot="center">购物街</div></nav-bar>
+    <tab-control 
+      :titles="['流行','新款','精选']" 
+      @tabClick="tabClick"
+      ref="tabControl1" class="tab-control" v-show="isTabFixed"/>
     <scroll class="content" 
     ref="scroll" 
     :probe-type="3" 
     :pull-up-load="true"
-    @scroll="contentScroll">
-      <home-Swiper :banners="banners"/>
+    @scroll="contentScroll"
+    @pullingUp="loadMore">
+      <home-Swiper :banners="banners" @swiperImageLoad.once="swiperImageLoad"/>
       <recommend-view :recommends="recommends"/>
       <feature-view/>
-      <tab-control :titles="['流行','新款','精选']" class="tab-control" 
-          @tabClick="tabClick"/>
+      <tab-control 
+      :titles="['流行','新款','精选']" 
+      @tabClick="tabClick"
+      ref="tabControl2"/>
       <goods-list :goods="showGoods"/>   
     </scroll>  
     <back-top @click.native="backClick" v-show="isShowBackTop"/>
@@ -29,6 +36,8 @@ import { getHomMultidata,getHomeGoods } from 'network/home.js'
 
 import Scroll from 'components/common/scroll/Scroll.vue'
 import BackTop from "components/content/backtop/BackTop.vue";
+
+import { debounce } from "common/utils.js";
 
 export default {
     name:'Home',
@@ -52,7 +61,10 @@ export default {
           'sell':{page:0,list:[]}
         },
         currentType:'pop',
-        isShowBackTop: false
+        isShowBackTop: false,
+        tabOffsetTop:0,//tabControl的偏移量(吸顶位置)
+        isTabFixed:false,//是否吸顶
+        saveY:0//用以解决切换TabBar回来的时候Better-Scroll未记录Y轴
       }
     },
     computed:{
@@ -68,13 +80,25 @@ export default {
         this.getHomeGoods('new')
         this.getHomeGoods('sell')
     },
+    activated(){
+        // console.log(this.saveY);        
+        this.$refs.scroll.refresh()
+        this.$refs.scroll.scrollTo(0,this.saveY,0)
+    },
+    deactivated(){      
+      this.saveY = this.$refs.scroll.getScrollY()
+      // console.log(this.saveY)
+    },
     mounted(){      
         //3.监听item中图片加载完成
-        const refresh = this.debounce(this.$refs.scroll.refresh,500)
+        const refresh = debounce(this.$refs.scroll.refresh,500)
 
         this.$bus.$on('itemImageLoad',()=>{          
           refresh()
         })
+    },
+    destroyed(){
+      // console.log('销毁了');      
     },
     methods:{
       tabClick(index){
@@ -89,6 +113,8 @@ export default {
             this.currentType = 'sell'
             break;
         }
+        this.$refs.tabControl1.currentIndex = index;
+        this.$refs.tabControl2.currentIndex = index;
       },            
       getHomMultidata(){
         getHomMultidata().then(res => {
@@ -101,6 +127,9 @@ export default {
         getHomeGoods(type,page).then(res => {
           this.goods[type].list.push(...res.data.list);
           this.goods[type].page += 1;
+
+          //完成上拉加载
+          this.$refs.scroll.finishPullUp()
       })
       },
       backClick(){
@@ -108,18 +137,16 @@ export default {
       },
       contentScroll(position){
         this.isShowBackTop = Math.abs(position.y) > 1000
+
+        this.isTabFixed = Math.abs(position.y) > this.tabOffsetTop;
       },
-      //防抖函数（单位时间后再执行某项操作）
-      debounce(func, delay){
-        let timer = null;
-
-        return function(...args){
-          if(timer) clearTimeout(timer)
-
-          timer = setTimeout(() => {
-            func.apply(this,args);
-          }, delay);
-        }
+      loadMore(){
+        //console.log("加载更多");
+        this.getHomeGoods(this.currentType);
+      },
+      swiperImageLoad(){
+        // console.log(this.$refs.tabControl2.$el.offsetTop);         
+        this.tabOffsetTop = this.$refs.tabControl2.$el.offsetTop
       }
     }
 }
@@ -136,18 +163,11 @@ export default {
     background-color: #1296db;
     color:white;
 
-    position :fixed;
+    /* position :fixed;
     left: 0;
     right: 0;
     top: 0;
-    z-index: 9;
-  }
-
-  .tab-control{
-    position: sticky;
-    top: 44px;
-    background-color: #fff;
-    z-index: 9;
+    z-index: 9; */
   }
 
   .content{
@@ -156,4 +176,16 @@ export default {
     top: 44px;
     bottom: 49px;
   }
+
+  .tab-control{
+    position: relative;
+    background-color: #fff;
+    z-index: 9;
+  }
+  /* .fixed{
+    position: fixed;
+    left:0;
+    right: 0;
+    top: 44px;
+  } */
 </style>

@@ -12,5 +12,6 @@ module.exports = {
             .set('views',resolve('src/views'))
             .set('components',resolve('src/components'))
             .set('network',resolve('src/network'))
+            .set('common',resolve('src/common'))
     }
 };
