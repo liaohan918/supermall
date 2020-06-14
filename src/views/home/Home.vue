@@ -1,14 +1,19 @@
 <template>
   <div id="home">
     <nav-bar class="home-nav"><div slot="center">购物街</div></nav-bar>
-    <scroll class="content">
+    <scroll class="content" 
+    ref="scroll" 
+    :probe-type="3" 
+    :pull-up-load="true"
+    @scroll="contentScroll">
       <home-Swiper :banners="banners"/>
       <recommend-view :recommends="recommends"/>
       <feature-view/>
       <tab-control :titles="['流行','新款','精选']" class="tab-control" 
           @tabClick="tabClick"/>
       <goods-list :goods="showGoods"/>   
-    </scroll>        
+    </scroll>  
+    <back-top @click.native="backClick" v-show="isShowBackTop"/>
   </div>
 </template>
 
@@ -23,6 +28,7 @@ import GoodsList from 'components/content/goods/GoodsList.vue'
 import { getHomMultidata,getHomeGoods } from 'network/home.js'
 
 import Scroll from 'components/common/scroll/Scroll.vue'
+import BackTop from "components/content/backtop/BackTop.vue";
 
 export default {
     name:'Home',
@@ -33,7 +39,8 @@ export default {
       FeatureView,
       TabControl,
       GoodsList,
-      Scroll
+      Scroll,
+      BackTop
     },
     data(){
       return {
@@ -44,7 +51,8 @@ export default {
           'new':{page:0,list:[]},
           'sell':{page:0,list:[]}
         },
-        currentType:'pop'
+        currentType:'pop',
+        isShowBackTop: false
       }
     },
     computed:{
@@ -60,8 +68,13 @@ export default {
         this.getHomeGoods('new')
         this.getHomeGoods('sell')
     },
-    mounted(){
+    mounted(){      
+        //3.监听item中图片加载完成
+        const refresh = this.debounce(this.$refs.scroll.refresh,500)
 
+        this.$bus.$on('itemImageLoad',()=>{          
+          refresh()
+        })
     },
     methods:{
       tabClick(index){
@@ -89,6 +102,24 @@ export default {
           this.goods[type].list.push(...res.data.list);
           this.goods[type].page += 1;
       })
+      },
+      backClick(){
+        this.$refs.scroll.scrollTo(0,0);
+      },
+      contentScroll(position){
+        this.isShowBackTop = Math.abs(position.y) > 1000
+      },
+      //防抖函数（单位时间后再执行某项操作）
+      debounce(func, delay){
+        let timer = null;
+
+        return function(...args){
+          if(timer) clearTimeout(timer)
+
+          timer = setTimeout(() => {
+            func.apply(this,args);
+          }, delay);
+        }
       }
     }
 }

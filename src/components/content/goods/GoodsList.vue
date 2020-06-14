@@ -6,7 +6,7 @@
 </template>
 
 <script>
-    import GoodsListItem from './GoddsListItem.vue'
+    import GoodsListItem from './GoodsListItem.vue'
 
     export default {
         name:'GoodsList',

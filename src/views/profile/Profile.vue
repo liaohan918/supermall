@@ -3,11 +3,12 @@
 </template>
 
 <script>
+import Scroll from "components/common/scroll/Scroll.vue";
 export default {
     name:'Profile'
 }
 </script>
 
-<style>
+<style scoped>
 
 </style>
